@@ -1,0 +1,1 @@
+java -cp "C:\Users\disof\craftinginterpreters\lox\lox\build" com.craftinginterpreters.tool.GenerateAst "C:\Users\disof\craftinginterpreters\lox\lox\src\com\craftinginterpreters\lox"

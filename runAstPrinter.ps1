@@ -1,0 +1,1 @@
+java -cp "C:\Users\disof\craftinginterpreters\lox\lox\build" com.craftinginterpreters.lox.AstPrinter
