@@ -10,7 +10,27 @@ public class Interpreter implements Expr.Visitor<Object>,
                                     Stmt.Visitor<Void> {                                    
   private static class BreakException extends RuntimeException {}
 
-  private Environment environment = new Environment();
+  final Environment globals = new Environment();
+  private Environment environment = globals;
+
+  Interpreter() {
+    globals.define("time", new LoxCallable() {
+      @Override
+      public int arity() {
+        return 0;
+      }
+
+      @Override
+      public Object call(Interpreter interpreter, List<Object> arguments) {
+        return (double)System.currentTimeMillis() / 1000.0;
+      }
+
+      @Override
+      public String toString() {
+        return "<native fn>";
+      }
+    });
+  }
 
   void interpret(List<Stmt> statements) {
     try {
@@ -118,6 +138,12 @@ public class Interpreter implements Expr.Visitor<Object>,
   }
 
   @Override
+  public Void visitFunctionStmt(Stmt.Function stmt) {
+    environment.define(stmt.name.lexeme, new LoxFunction(stmt.name.lexeme, stmt.params, stmt.body, environment));
+    return null;
+  }
+
+  @Override
   public Void visitVarStmt(Stmt.Var stmt) {
     Object value = null;
     if (stmt.initializer != null) {
@@ -211,6 +237,19 @@ public class Interpreter implements Expr.Visitor<Object>,
     return function.call(this, arguments);
   }
 
+  @Override
+  public Void visitReturnStmt(Stmt.Return stmt) {
+    Object value = null;
+    if (stmt.value != null) value = evaluate(stmt.value);
+
+    throw new Return(value);
+  }
+
+  @Override
+  public Object visitFunctionExpr(Expr.Function expr) {
+    return new LoxFunction("lambda", expr.params, expr.body, environment); 
+  }
+
   public Object evaluate(Expr expr) {
     return expr.accept(this);
   }
@@ -219,7 +258,7 @@ public class Interpreter implements Expr.Visitor<Object>,
     statement.accept(this);
   }
 
-  private void executeBlock(List<Stmt> statements, Environment environment) {
+  void executeBlock(List<Stmt> statements, Environment environment) {
     Environment previous = this.environment;
     try {
       this.environment = environment;

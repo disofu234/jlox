@@ -1,1 +1,1 @@
-java -cp "C:\Users\disof\craftinginterpreters\lox\lox\build" com.craftinginterpreters.lox.Lox "C:\Users\disof\craftinginterpreters\lox\lox\code.lox"
+java -cp "$PSScriptRoot\build" com.craftinginterpreters.lox.Lox "$PSScriptRoot\code.lox"

@@ -29,6 +29,10 @@ public class Parser {
 
   private Stmt declaration() {
     try {
+      if (check(FUN) && checkNext(IDENTIFIER)) {
+        match(FUN);
+        return function("function");
+      }
       if (match(VAR)) return varDeclaration();
 
       return statement();
@@ -36,6 +40,45 @@ public class Parser {
       synchronize();
       return null;
     }
+  }
+
+  private Stmt function(String kind) {
+    Token name = consume(IDENTIFIER, "Expect " + kind + " name.");
+    
+    List<Token> params = parameters(kind);
+    List<Stmt> body = body(kind);
+
+    return new Stmt.Function(name, params, body);
+  }
+
+  private List<Token> parameters(String kind) {
+    consume(LEFT_PAREN, "Expect '(' after " + kind + " name.");
+
+    List<Token> params = new ArrayList<Token>();
+    if (match(IDENTIFIER)) {
+      Token param = previous();
+      while (true) {
+        if (params.size() >= 255) {
+          error(peek(), "Can't have more than 255 parameters.");
+        }
+
+        params.add(param);
+
+        if (!match(COMMA)) {
+          break;
+        }
+
+        param = consume(IDENTIFIER, "Expect parameter after ','.");
+      }
+    }
+
+    consume(RIGHT_PAREN, "Expect ')' after parameters.");
+    return params;
+  }
+
+  private List<Stmt> body(String kind) {
+    consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
+    return block();
   }
 
   private Stmt varDeclaration() {
@@ -52,11 +95,12 @@ public class Parser {
 
   private Stmt statement() {
     if (match(PRINT)) return printStatement();
-    if (match(LEFT_BRACE)) return blockStatement();
+    if (match(LEFT_BRACE)) return new Stmt.Block(block());
     if (match(IF)) return ifStatement();
     if (match(WHILE)) return whileStatement();
     if (match(FOR)) return forStatement();
     if (match(BREAK)) return breakStatement();
+    if (match(RETURN)) return returnStatement();
 
     return expressionStatement();
   }
@@ -67,14 +111,14 @@ public class Parser {
     return new Stmt.Print(value);
   }
 
-  private Stmt blockStatement() {
+  private List<Stmt> block() {
     List<Stmt> statements = new ArrayList<Stmt>();
     while (!check(RIGHT_BRACE) && !isAtEnd()) {
       statements.add(declaration());
     }
 
     consume(RIGHT_BRACE, "Expected '}' to close out block statement.");
-    return new Stmt.Block(statements);
+    return statements;
   }
 
   private Stmt ifStatement() {
@@ -160,6 +204,18 @@ public class Parser {
 
     consume(SEMICOLON, "Expect ';' after break statement.");
     return new Stmt.Break(brk);
+  }
+
+  private Stmt returnStatement() {
+    Token keyword = previous();
+
+    Expr value = null;
+    if (!check(SEMICOLON)) {
+      value = expression();
+    }
+
+    consume(SEMICOLON, "Expect ';' after return statement.");
+    return new Stmt.Return(keyword, value);
   }
 
   private Stmt expressionStatement() {
@@ -287,7 +343,7 @@ public class Parser {
   }
 
   private Expr call() {
-    Expr expr = primary();
+    Expr expr = lambda();
 
     while (true) {
       if (match(LEFT_PAREN)) {
@@ -298,6 +354,16 @@ public class Parser {
     }
 
     return expr;
+  }
+
+  private Expr lambda() {
+    if (match(FUN)) {
+      List<Token> params = parameters("lambda");
+      List<Stmt> body = body("lambda");
+      return new Expr.Function(params, body);
+    }
+
+    return primary();
   }
 
   private Expr primary() {
@@ -353,12 +419,25 @@ public class Parser {
     return peek().type == type;
   }
 
+  private boolean checkNext(TokenType type) {
+    if (isAtEnd() || isNextAtEnd()) return false;
+    return peekNext().type == type;
+  }
+
   private boolean isAtEnd() {
     return peek().type == EOF;
   }
 
+  private boolean isNextAtEnd() {
+    return peekNext().type == EOF;
+  }
+
   private Token peek() {
     return tokens.get(current);
+  }
+
+  private Token peekNext() {
+    return tokens.get(current + 1);
   }
 
   private Token advance() {

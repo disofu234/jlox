@@ -1,1 +1,1 @@
-java -cp "C:\Users\disof\craftinginterpreters\lox\lox\build" com.craftinginterpreters.lox.AstPrinter
+java -cp "$PSScriptRoot\build" com.craftinginterpreters.lox.AstPrinter

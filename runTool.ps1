@@ -1,1 +1,1 @@
-java -cp "C:\Users\disof\craftinginterpreters\lox\lox\build" com.craftinginterpreters.tool.GenerateAst "C:\Users\disof\craftinginterpreters\lox\lox\src\com\craftinginterpreters\lox"
+java -cp "$PSScriptRoot\build" com.craftinginterpreters.tool.GenerateAst "$PSScriptRoot\src\com\craftinginterpreters\lox"
